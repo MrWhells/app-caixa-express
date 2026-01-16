@@ -2,6 +2,7 @@ import streamlit as st
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
+import pytz  # Adicione esta linha
 
 import json
 
@@ -53,7 +54,8 @@ with col_res1:
 with col_res2:
     st.metric("Total Boletos Hoje", total_boletos)
 with col_res3:
-    st.metric("Data", datetime.now().strftime("%d/%m/%Y"))
+    fuso_br = pytz.timezone('America/Sao_Paulo')
+st.metric("Data", datetime.now(fuso_br).strftime("%d/%m/%Y"))
 
 st.divider()
 
@@ -83,7 +85,8 @@ with st.form("lote_8", clear_on_submit=True):
         lista_entradas.append({"p": p, "q": q, "v": v, "t": t, "a": a, "s": s, "f": f})
 
     if st.form_submit_button("🚀 ENVIAR LOTE (8 LINHAS)"):
-        agora = datetime.now()
+        fuso_br = pytz.timezone('America/Sao_Paulo') # Adicione esta linha aqui
+        agora = datetime.now(fuso_br)
         lote_final = []
         for item in lista_entradas:
             if item["p"]:
