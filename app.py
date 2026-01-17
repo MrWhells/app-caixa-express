@@ -22,7 +22,8 @@ client = gspread.authorize(creds)
 
 def preparar_planilha():
     ss = client.open("sistema_pagamentos")
-    nome_hoje = datetime.now().strftime("%d-%m-%Y")
+    fuso_br = pytz.timezone('America/Sao_Paulo')
+    nome_hoje = datetime.now(fuso_br).strftime("%d-%m-%Y")
     try:
         return ss.worksheet(nome_hoje)
     except gspread.exceptions.WorksheetNotFound:
