@@ -41,7 +41,7 @@ sheet = preparar_planilha()
 
 # --- CÁLCULO DOS TOTAIS DO DIA ---
 todas_linhas = sheet.get_all_values()
-dados_existentes = todas_linhas[1:] if len(todas_linhas) > 1 else []
+dados_existentes = todas_linhas[6:] if len(todas_linhas) > 6 else []
 total_veiculos = len(dados_existentes)
 total_boletos = sum(int(linha[2]) for linha in dados_existentes if linha[2].isdigit())
 
@@ -100,7 +100,21 @@ with st.form("lote_8", clear_on_submit=True):
                 ]
                 lote_final.append(linha)
 
-        if lote_final:
-            sheet.append_rows(lote_final)
-            st.success(f"✅ {len(lote_final)} registros enviados!")
-            st.rerun()
+                if lote_final:
+                    try:
+                            # 1. Conta quantas linhas já têm dados na coluna I (Placa)
+                                # A coluna I é a 9ª coluna.
+                                coluna_placa = sheet.col_values(9) 
+                                proxima_linha = len(coluna_placa) + 1
+                                
+                                # 2. Garante que nunca escreva acima da linha 7 (seu cabeçalho vai até a 6)
+                                if proxima_linha < 7:
+                                    proxima_linha = 7
+                                    
+                                # 3. Insere o lote na posição exata
+                                sheet.insert_rows(lote_final, row=proxima_linha)
+                                
+                                st.success(f"✅ {len(lote_final)} registros enviados com sucesso!")
+                                st.rerun()
+                    except Exception as e:
+                                st.error(f"Erro ao enviar: {e}")
