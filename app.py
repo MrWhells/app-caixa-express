@@ -47,7 +47,7 @@ total_boletos = sum(int(linha[2]) for linha in dados_existentes if linha[2].isdi
 # --- INTERFACE ---
 st.set_page_config(page_title="Caixa Express 8x", layout="wide")
 
-st.title("⚡ Lançamento Express (Lote de 8)")
+st.title("⚡ Lançamento de pagamentos")
 col_res1, col_res2, col_res3 = st.columns(3)
 with col_res1:
     st.metric("Veículos Hoje", total_veiculos)
@@ -76,10 +76,10 @@ with st.form("lote_8", clear_on_submit=True):
         c = st.columns([2, 1, 2, 1.2, 1.2, 1.2, 2])
         p = c[0].text_input(f"P{i}", label_visibility="collapsed", key=f"p{i}").upper()
         q = c[1].text_input(f"Q{i}", value="1", label_visibility="collapsed", key=f"q{i}")
-        v = c[2].text_input(f"V{i}", value="0", label_visibility="collapsed", key=f"v{i}")
-        t = c[3].text_input(f"T{i}", value="0", label_visibility="collapsed", key=f"t{i}")
-        a = c[4].text_input(f"A{i}", value="0", label_visibility="collapsed", key=f"a{i}")
-        s = c[5].text_input(f"S{i}", value="0", label_visibility="collapsed", key=f"s{i}")
+        v = c[2].text_input(f"V{i}", value="", label_visibility="collapsed", key=f"v{i}")
+        t = c[3].text_input(f"T{i}", value="", label_visibility="collapsed", key=f"t{i}")
+        a = c[4].text_input(f"A{i}", value="", label_visibility="collapsed", key=f"a{i}")
+        s = c[5].text_input(f"S{i}", value="", label_visibility="collapsed", key=f"s{i}")
         f = c[6].selectbox(f"F{i}", ["Pix", "Dinheiro", "Débito", "Crédito"], label_visibility="collapsed", key=f"f{i}")
         
         lista_entradas.append({"p": p, "q": q, "v": v, "t": t, "a": a, "s": s, "f": f})
