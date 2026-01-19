@@ -2,20 +2,16 @@ import streamlit as st
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
-import pytz  # Adicione esta linha
-
+import pytz
 import json
 
 # --- CONFIGURAÇÃO ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
-# Verifica se está no Streamlit Cloud (usando Secrets) ou Local (usando arquivo)
 if "gcp_service_account" in st.secrets:
-    # Para a Nuvem
     info_dict = json.loads(st.secrets["gcp_service_account"])
     creds = ServiceAccountCredentials.from_json_keyfile_dict(info_dict, scope)
 else:
-    # Para o seu Windows
     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
 
 client = gspread.authorize(creds)
@@ -30,10 +26,15 @@ def preparar_planilha():
         modelo = ss.worksheet("MODELO")
         return ss.duplicate_sheet(modelo.id, insert_sheet_index=1, new_sheet_name=nome_hoje)
 
+# FUNÇÃO QUE CONVERTE VÍRGULA EM PONTO E FAZ CALCULOS (Ex: 10+5)
 def calcular_valor(texto):
+    if not texto:
+        return 0.0
     try:
-        texto_limpo = str(texto).replace(" ", "").replace(",", ".")
-        return float(eval(texto_limpo)) if texto_limpo else 0.0
+        # Remove R$, espaços e troca vírgula por ponto
+        texto_limpo = str(texto).replace("R$", "").replace(" ", "").replace(",", ".")
+        # O eval permite que você digite contas como 10+5.50 e ele entenda o resultado
+        return float(eval(texto_limpo))
     except:
         return 0.0
 
@@ -43,7 +44,7 @@ sheet = preparar_planilha()
 todas_linhas = sheet.get_all_values()
 dados_existentes = todas_linhas[6:] if len(todas_linhas) > 6 else []
 total_veiculos = len(dados_existentes)
-total_boletos = sum(int(linha[2]) for linha in dados_existentes if linha[2].isdigit())
+total_boletos = sum(int(linha[2]) for linha in dados_existentes if len(linha) > 2 and str(linha[2]).isdigit())
 
 # --- INTERFACE ---
 st.set_page_config(page_title="Caixa Express 8x", layout="wide")
@@ -56,13 +57,12 @@ with col_res2:
     st.metric("Total Boletos Hoje", total_boletos)
 with col_res3:
     fuso_br = pytz.timezone('America/Sao_Paulo')
-st.metric("Data", datetime.now(fuso_br).strftime("%d/%m/%Y"))
+    st.metric("Data", datetime.now(fuso_br).strftime("%d/%m/%Y"))
 
 st.divider()
 
 with st.form("lote_8", clear_on_submit=True):
     lista_entradas = []
-    # Cabeçalho
     cols_tit = st.columns([2, 1, 2, 1.2, 1.2, 1.2, 2])
     cols_tit[0].write("**Placa**")
     cols_tit[1].write("**Qtd**")
@@ -72,7 +72,6 @@ with st.form("lote_8", clear_on_submit=True):
     cols_tit[5].write("**Saiu**")
     cols_tit[6].write("**Forma**")
 
-    # Agora o loop vai até 8
     for i in range(8):
         c = st.columns([2, 1, 2, 1.2, 1.2, 1.2, 2])
         p = c[0].text_input(f"P{i}", label_visibility="collapsed", key=f"p{i}").upper()
@@ -85,36 +84,36 @@ with st.form("lote_8", clear_on_submit=True):
         
         lista_entradas.append({"p": p, "q": q, "v": v, "t": t, "a": a, "s": s, "f": f})
 
-    if st.form_submit_button("🚀 ENVIAR LOTE (8 LINHAS)"):
-        fuso_br = pytz.timezone('America/Sao_Paulo') # Adicione esta linha aqui
+    if st.form_submit_button("🚀 ENVIAR"):
+        fuso_br = pytz.timezone('America/Sao_Paulo')
         agora = datetime.now(fuso_br)
         lote_final = []
+        
         for item in lista_entradas:
-            if item["p"]:
+            # Envia se tiver Placa OU se tiver Valor
+            if item["p"] or item["v"]:
                 linha = [
-                    agora.strftime("%d/%m/%Y"), agora.strftime("%H:%M:%S"),
+                    agora.strftime("%d/%m/%Y"), 
+                    agora.strftime("%H:%M:%S"),
                     int(item["q"]) if item["q"].isdigit() else 1,
-                    calcular_valor(item["v"]), calcular_valor(item["t"]),
-                    calcular_valor(item["a"]), calcular_valor(item["s"]),
-                    item["f"], item["p"]
+                    calcular_valor(item["v"]), 
+                    calcular_valor(item["t"]),
+                    calcular_valor(item["a"]), 
+                    calcular_valor(item["s"]),
+                    item["f"], 
+                    item["p"] if item["p"] else "S/P"
                 ]
                 lote_final.append(linha)
 
-                if lote_final:
-                    try:
-                            # 1. Conta quantas linhas já têm dados na coluna I (Placa)
-                                # A coluna I é a 9ª coluna.
-                                coluna_placa = sheet.col_values(9) 
-                                proxima_linha = len(coluna_placa) + 1
-                                
-                                # 2. Garante que nunca escreva acima da linha 7 (seu cabeçalho vai até a 6)
-                                if proxima_linha < 7:
-                                    proxima_linha = 7
-                                    
-                                # 3. Insere o lote na posição exata
-                                sheet.insert_rows(lote_final, row=proxima_linha)
-                                
-                                st.success(f"✅ {len(lote_final)} registros enviados com sucesso!")
-                                st.rerun()
-                    except Exception as e:
-                                st.error(f"Erro ao enviar: {e}")
+        if lote_final:
+            try:
+                coluna_placa = sheet.col_values(9) 
+                proxima_linha = len(coluna_placa) + 1
+                if proxima_linha < 7:
+                    proxima_linha = 7
+                
+                sheet.insert_rows(lote_final, row=proxima_linha)
+                st.success(f"✅ {len(lote_final)} registros enviados com sucesso!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao enviar: {e}")
