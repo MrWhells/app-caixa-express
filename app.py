@@ -55,57 +55,62 @@ with col_res3:
 
 st.divider()
 
-# --- LÓGICA DE DETECÇÃO DE TELA (HACK) ---
-# Se o usuário não redimensionar a tela, o Streamlit wide geralmente indica PC.
-# Como não há detecção nativa, usamos colunas para organizar o visual.
-
 with st.form("lote_8", clear_on_submit=True):
     lista_entradas = []
     
-    # Pergunta ao usuário o modo de visualização ou tenta adaptar
-    modo_celular = st.checkbox("📱 Modo Celular (Expansores)", value=False, help="Marque se estiver no celular")
+    # Toggle para trocar o visual
+    modo_celular = st.toggle("📱 Ativar Modo Celular (Cartões)", value=False)
 
-    if not modo_celular:
-        # VISUAL PARA PC (Tabela Horizontal)
-        cols_tit = st.columns([2, 1, 2, 1.2, 1.2, 1.2, 2])
-        cols_tit[0].write("**Placa**")
-        cols_tit[1].write("**Qtd**")
-        cols_tit[2].write("**Valor**")
-        cols_tit[3].write("**Taxa**")
-        cols_tit[4].write("**Add**")
-        cols_tit[5].write("**Saiu**")
-        cols_tit[6].write("**Forma**")
-
-        for i in range(8):
-            c = st.columns([2, 1, 2, 1.2, 1.2, 1.2, 2])
-            p = c[0].text_input(f"P{i}", label_visibility="collapsed", key=f"p{i}").upper()
-            q = c[1].text_input(f"Q{i}", value="1", label_visibility="collapsed", key=f"q{i}")
-            v = c[2].text_input(f"V{i}", value="", label_visibility="collapsed", key=f"v{i}")
-            t = c[3].text_input(f"T{i}", value="", label_visibility="collapsed", key=f"t{i}")
-            a = c[4].text_input(f"A{i}", value="", label_visibility="collapsed", key=f"a{i}")
-            s = c[5].text_input(f"S{i}", value="", label_visibility="collapsed", key=f"s{i}")
-            f = c[6].selectbox(f"F{i}", ["Pix", "Dinheiro", "Débito", "Crédito"], label_visibility="collapsed", key=f"f{i}")
-            lista_entradas.append({"p": p, "q": q, "v": v, "t": t, "a": a, "s": s, "f": f})
-    else:
-        # VISUAL PARA CELULAR (Expansores)
-        for i in range(8):
-            with st.expander(f"🚗 Veículo {i+1}", expanded=(i==0)):
+    # LOOP ÚNICO PARA CRIAR OS 8 VEÍCULOS
+    for i in range(8):
+        if modo_celular:
+            # --- VISUAL CELULAR (EXPANSORES) ---
+            with st.expander(f"🚗 VEÍCULO {i+1}", expanded=(i==0)):
+                # No celular, agrupamos em pequenas colunas para não ficar gigante
                 c1, c2 = st.columns([2, 1])
-                p = c1.text_input("Placa", key=f"p_cel{i}").upper()
-                q = c2.text_input("Qtd", value="1", key=f"q_cel{i}")
-                v = st.text_input("Valor", key=f"v_cel{i}")
+                p = c1.text_input("Placa", key=f"p{i}").upper()
+                q = c2.text_input("Qtd", value="1", key=f"q{i}")
+                
+                v = st.text_input("Valor Total", key=f"v{i}", help="Pode somar ex: 10+20")
+                
                 col_f = st.columns(3)
-                t = col_f[0].text_input("Taxa", key=f"t_cel{i}")
-                a = col_f[1].text_input("Add", key=f"a_cel{i}")
-                s = col_f[2].text_input("Saiu", key=f"s_cel{i}")
-                f = st.selectbox("Forma", ["Pix", "Dinheiro", "Débito", "Crédito"], key=f"f_cel{i}")
-                lista_entradas.append({"p": p, "q": q, "v": v, "t": t, "a": a, "s": s, "f": f})
+                t = col_f[0].text_input("Taxa", key=f"t{i}")
+                a = col_f[1].text_input("Add", key=f"a{i}")
+                s = col_f[2].text_input("Saiu", key=f"s{i}")
+                
+                f = st.selectbox("Forma de Pagamento", ["Pix", "Dinheiro", "Débito", "Crédito"], key=f"f{i}")
+        else:
+            # --- VISUAL PC (TABELA HORIZONTAL) ---
+            if i == 0:
+                cols_tit = st.columns([2, 1, 2, 1.2, 1.2, 1.2, 2])
+                cols_tit[0].write("**Placa**")
+                cols_tit[1].write("**Qtd**")
+                cols_tit[2].write("**Valor**")
+                cols_tit[3].write("**Taxa**")
+                cols_tit[4].write("**Add**")
+                cols_tit[5].write("**Saiu**")
+                cols_tit[6].write("**Forma**")
+
+            c = st.columns([2, 1, 2, 1.2, 1.2, 1.2, 2])
+            p = c[0].text_input(f"P{i}", label_visibility="collapsed", key=f"pc_p{i}").upper()
+            q = c[1].text_input(f"Q{i}", value="1", label_visibility="collapsed", key=f"pc_q{i}")
+            v = c[2].text_input(f"V{i}", value="", label_visibility="collapsed", key=f"pc_v{i}")
+            t = c[3].text_input(f"T{i}", value="", label_visibility="collapsed", key=f"pc_t{i}")
+            a = c[4].text_input(f"A{i}", value="", label_visibility="collapsed", key=f"pc_a{i}")
+            s = c[5].text_input(f"S{i}", value="", label_visibility="collapsed", key=f"pc_s{i}")
+            f = c[6].selectbox(f"F{i}", ["Pix", "Dinheiro", "Débito", "Crédito"], label_visibility="collapsed", key=f"pc_f{i}")
+        
+        # Adiciona à lista independente do modo visual escolhido
+        lista_entradas.append({"p": p, "q": q, "v": v, "t": t, "a": a, "s": s, "f": f})
 
     st.markdown("---")
-    if st.form_submit_button("🚀 ENVIAR LOTE PARA PLANILHA", use_container_width=True):
+    enviar = st.form_submit_button("🚀 ENVIAR LOTE PARA PLANILHA", use_container_width=True)
+
+    if enviar:
         fuso_br = pytz.timezone('America/Sao_Paulo')
         agora = datetime.now(fuso_br)
         lote_final = []
+        
         for item in lista_entradas:
             if item["p"] or item["v"]:
                 linha = [
@@ -116,11 +121,13 @@ with st.form("lote_8", clear_on_submit=True):
                     item["f"], item["p"] if item["p"] else "S/P"
                 ]
                 lote_final.append(linha)
+
         if lote_final:
             try:
                 coluna_placa = sheet.col_values(9)
                 proxima_linha = max(len(coluna_placa) + 1, 7)
                 sheet.insert_rows(lote_final, row=proxima_linha)
-                st.success(f"✅ {len(lote_final)} registros enviados!")
+                st.success(f"✅ {len(lote_final)} registros enviados com sucesso!")
                 st.rerun()
-            except Exception as e: st.error(f"Erro: {e}")
+            except Exception as e:
+                st.error(f"Erro ao enviar: {e}")
