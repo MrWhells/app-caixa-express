@@ -78,7 +78,7 @@ with st.form("lote_8", clear_on_submit=True):
                 a = col_f[1].text_input("Add", key=f"a{i}")
                 s = col_f[2].text_input("Saiu", key=f"s{i}")
                 
-                f = st.selectbox("Forma de Pagamento", ["Pix", "Dinheiro", "Débito", "Crédito"], key=f"f{i}")
+                f = st.selectbox("Forma de Pagamento", ["Pix", "Dinheiro", "Débito", "Crédito", "PIX+DIN", "DIN+CARTAO", "PIX+CARTAO"], key=f"f{i}")
         else:
             # --- VISUAL PC (TABELA HORIZONTAL) ---
             if i == 0:
