@@ -98,7 +98,7 @@ with st.form("lote_8", clear_on_submit=True):
             t = c[3].text_input(f"T{i}", value="", label_visibility="collapsed", key=f"pc_t{i}")
             a = c[4].text_input(f"A{i}", value="", label_visibility="collapsed", key=f"pc_a{i}")
             s = c[5].text_input(f"S{i}", value="", label_visibility="collapsed", key=f"pc_s{i}")
-            f = c[6].selectbox(f"F{i}", ["Pix", "Dinheiro", "Débito", "Crédito"], label_visibility="collapsed", key=f"pc_f{i}")
+            f = c[6].selectbox(f"F{i}", ["Pix", "Dinheiro", "Débito", "Crédito", "PIX+DIN", "PIX+CARTÃO"], label_visibility="collapsed", key=f"pc_f{i}")
         
         # Adiciona à lista independente do modo visual escolhido
         lista_entradas.append({"p": p, "q": q, "v": v, "t": t, "a": a, "s": s, "f": f})
