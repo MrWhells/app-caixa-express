@@ -29,6 +29,7 @@ def preparar_planilha():
 def calcular_valor(texto):
     if not texto: return 0.0
     try:
+        # Limpa R$, espaços e converte vírgula para ponto antes do eval
         texto_limpo = str(texto).replace("R$", "").replace(" ", "").replace(",", ".")
         return float(eval(texto_limpo))
     except: return 0.0
@@ -58,15 +59,12 @@ st.divider()
 with st.form("lote_8", clear_on_submit=True):
     lista_entradas = []
     
-    # Toggle para trocar o visual
     modo_celular = st.toggle("📱 Ativar Modo Celular (Cartões)", value=False)
 
-    # LOOP ÚNICO PARA CRIAR OS 8 VEÍCULOS
     for i in range(8):
         if modo_celular:
             # --- VISUAL CELULAR (EXPANSORES) ---
             with st.expander(f"🚗 VEÍCULO {i+1}", expanded=(i==0)):
-                # No celular, agrupamos em pequenas colunas para não ficar gigante
                 c1, c2 = st.columns([2, 1])
                 p = c1.text_input("Placa", key=f"p{i}").upper()
                 q = c2.text_input("Qtd", value="1", key=f"q{i}")
@@ -79,10 +77,12 @@ with st.form("lote_8", clear_on_submit=True):
                 s = col_f[2].text_input("Saiu", key=f"s{i}")
                 
                 f = st.selectbox("Forma de Pagamento", ["Pix", "Dinheiro", "Débito", "Crédito", "PIX+DIN", "DIN+CARTAO", "PIX+CARTAO"], key=f"f{i}")
+                obs = st.text_input("Observação", key=f"o{i}") # Campo extra no celular
         else:
             # --- VISUAL PC (TABELA HORIZONTAL) ---
             if i == 0:
-                cols_tit = st.columns([2, 1, 2, 1.2, 1.2, 1.2, 2])
+                # Adicionado uma coluna extra no final para a Observação (J)
+                cols_tit = st.columns([2, 1, 2, 1.2, 1.2, 1.2, 2, 2])
                 cols_tit[0].write("**Placa**")
                 cols_tit[1].write("**Qtd**")
                 cols_tit[2].write("**Valor**")
@@ -90,21 +90,22 @@ with st.form("lote_8", clear_on_submit=True):
                 cols_tit[4].write("**Add**")
                 cols_tit[5].write("**Saiu**")
                 cols_tit[6].write("**Forma**")
+                cols_tit[7].write("**Obs**")
 
-            c = st.columns([2, 1, 2, 1.2, 1.2, 1.2, 2])
+            c = st.columns([2, 1, 2, 1.2, 1.2, 1.2, 2, 2])
             p = c[0].text_input(f"P{i}", label_visibility="collapsed", key=f"pc_p{i}").upper()
             q = c[1].text_input(f"Q{i}", value="1", label_visibility="collapsed", key=f"pc_q{i}")
             v = c[2].text_input(f"V{i}", value="", label_visibility="collapsed", key=f"pc_v{i}")
             t = c[3].text_input(f"T{i}", value="", label_visibility="collapsed", key=f"pc_t{i}")
             a = c[4].text_input(f"A{i}", value="", label_visibility="collapsed", key=f"pc_a{i}")
             s = c[5].text_input(f"S{i}", value="", label_visibility="collapsed", key=f"pc_s{i}")
-            f = c[6].selectbox(f"F{i}", ["Pix", "Dinheiro", "Débito", "Crédito", "PIX+DIN", "PIX+CARTÃO"], label_visibility="collapsed", key=f"pc_f{i}")
+            f = c[6].selectbox(f"F{i}", ["Pix", "Dinheiro", "Débito", "Crédito", "PIX+DIN", "PIX+CARTÃO", "DIN+CARTÃO"], label_visibility="collapsed", key=f"pc_f{i}")
+            obs = c[7].text_input(f"O{i}", value="", label_visibility="collapsed", key=f"pc_o{i}")
         
-        # Adiciona à lista independente do modo visual escolhido
-        lista_entradas.append({"p": p, "q": q, "v": v, "t": t, "a": a, "s": s, "f": f})
+        lista_entradas.append({"p": p, "q": q, "v": v, "t": t, "a": a, "s": s, "f": f, "obs": obs})
 
     st.markdown("---")
-    enviar = st.form_submit_button("🚀 ENVIAR LOTE PARA PLANILHA", use_container_width=True)
+    enviar = st.form_submit_button("🚀 ENVIAR PARA PLANILHA", use_container_width=True)
 
     if enviar:
         fuso_br = pytz.timezone('America/Sao_Paulo')
@@ -114,20 +115,28 @@ with st.form("lote_8", clear_on_submit=True):
         for item in lista_entradas:
             if item["p"] or item["v"]:
                 linha = [
-                    agora.strftime("%d/%m/%Y"), agora.strftime("%H:%M:%S"),
-                    int(item["q"]) if item["q"].isdigit() else 1,
-                    calcular_valor(item["v"]), calcular_valor(item["t"]),
-                    calcular_valor(item["a"]), calcular_valor(item["s"]),
-                    item["f"], item["p"] if item["p"] else "S/P"
+                    agora.strftime("%d/%m/%Y"), # Col A
+                    agora.strftime("%H:%M:%S"), # Col B
+                    int(item["q"]) if item["q"].isdigit() else 1, # Col C
+                    calcular_valor(item["v"]), # Col D
+                    calcular_valor(item["t"]), # Col E
+                    calcular_valor(item["a"]), # Col F
+                    calcular_valor(item["s"]), # Col G
+                    item["f"],                 # Col H
+                    item["p"] if item["p"] else "S/P", # Col I
+                    item["obs"]                # Col J (Nova!)
                 ]
                 lote_final.append(linha)
 
         if lote_final:
             try:
-                coluna_placa = sheet.col_values(9)
-                proxima_linha = max(len(coluna_placa) + 1, 7)
+                # Busca a coluna A para saber onde parar de inserir
+                coluna_referencia = sheet.col_values(1)
+                # Garante que comece no mínimo na linha 7 (abaixo do seu cabeçalho)
+                proxima_linha = max(len(coluna_referencia) + 1, 7)
+                
                 sheet.insert_rows(lote_final, row=proxima_linha)
-                st.success(f"✅ {len(lote_final)} registros enviados com sucesso!")
+                st.success(f"✅ {len(lote_final)} REGISTROS ENVIADOS!")
                 st.rerun()
             except Exception as e:
                 st.error(f"Erro ao enviar: {e}")
